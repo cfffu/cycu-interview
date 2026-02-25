@@ -62,55 +62,76 @@ Papa.parse(publicSpreadsheetUrl, {
 });
 
 function buildStructure(data) {
+    console.log("原始資料範例:", data[0]); // 除錯用：看第一筆資料的欄位名稱
+    
     data.forEach(row => {
         const col = row['學院'] ? row['學院'].trim() : null;
         if (!col) return;
 
-        // 根據學院判斷系所在哪一欄
-        let dept = "";
-        if (col === "理學院") dept = row['理學院系所有哪些？'];
-        else if (col === "工學院") dept = row['工學院系所有哪些？'];
-        else if (col === "電機資訊學院") dept = row['電機資訊學院系所有哪些？'];
-        else if (col === "商學院") dept = row['商學院系所有哪些？'];
-        else if (col === "法學院") dept = row['法學院系所有哪些？'];
-        else if (col === "設計學院") dept = row['設計學院系所有哪些？'];
-        else if (col === "人文與教育學院") dept = row['人文與教育學院系所有哪些？'];
+        // 動態判斷系所欄位：優先找包含該學院名稱且包含「系所」字眼的欄位
+        // 這樣就不用管有沒有問號了
+        let deptKey = Object.keys(row).find(key => key.includes(col) && key.includes('系所'));
+        let dept = deptKey ? row[deptKey] : null;
 
         const path = row['招生管道'] ? row['招生管道'].trim() : "未分類";
         const yr = row['學年度'] ? row['學年度'].trim() : "未知";
 
-        if (dept) {
+        if (dept && dept.trim() !== "") {
             dept = dept.trim();
             if (!structure[col]) structure[col] = {};
             if (!structure[col][dept]) structure[col][dept] = {};
             if (!structure[col][dept][path]) structure[col][dept][path] = {};
             
-            // 存儲整列資料
             structure[col][dept][path][yr] = row;
         }
     });
+    console.log("解析後的結構:", structure); // 如果這裡是空的，代表沒抓到系所
 }
 
 function initDropdowns() {
     const s1 = document.getElementById('sel-college');
+    const s2 = document.getElementById('sel-dept');
+    const s3 = document.getElementById('sel-path');
+    const s4 = document.getElementById('sel-year');
+
     s1.innerHTML = '<option value="">-- 選擇學院 --</option>';
     Object.keys(structure).sort().forEach(c => s1.add(new Option(c, c)));
     s1.disabled = false;
 
-    s1.onchange = () => updateNext(s1, 'sel-dept', structure[s1.value]);
-    document.getElementById('sel-dept').onchange = () => updateNext(document.getElementById('sel-dept'), 'sel-path', structure[s1.value][document.getElementById('sel-dept').value]);
-    document.getElementById('sel-path').onchange = () => updateNext(document.getElementById('sel-path'), 'sel-year', structure[s1.value][document.getElementById('sel-dept').value][document.getElementById('sel-path').value]);
-    document.getElementById('sel-year').onchange = showResult;
+    s1.onchange = () => {
+        resetDropdowns(['sel-dept', 'sel-path', 'sel-year']);
+        updateNext(s1, 'sel-dept', structure[s1.value]);
+    };
+    
+    s2.onchange = () => {
+        resetDropdowns(['sel-path', 'sel-year']);
+        updateNext(s2, 'sel-path', structure[s1.value][s2.value]);
+    };
+
+    s3.onchange = () => {
+        resetDropdowns(['sel-year']);
+        updateNext(s3, 'sel-year', structure[s1.value][s2.value][s3.value]);
+    };
+
+    s4.onchange = showResult;
+}
+
+function resetDropdowns(ids) {
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        el.innerHTML = '<option value="">請先選擇上一項</option>';
+        el.disabled = true;
+    });
+    document.getElementById('result').style.display = 'none';
 }
 
 function updateNext(current, nextId, nextData) {
     const next = document.getElementById(nextId);
-    next.innerHTML = '<option value="">-- 選擇下一個 --</option>';
-    if(nextData) {
-        Object.keys(nextData).sort().forEach(k => next.add(new Option(k, k)));
-        next.disabled = false;
-    }
-    document.getElementById('result').style.display = 'none';
+    if (!current.value || !nextData) return;
+
+    next.innerHTML = '<option value="">-- 請選擇 --</option>';
+    Object.keys(nextData).sort().forEach(k => next.add(new Option(k, k)));
+    next.disabled = false;
 }
 
 function showResult() {
