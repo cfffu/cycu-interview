@@ -43,18 +43,19 @@
 </div>
 
 <script>
-// 1. 這裡填入你的 Google Sheets 發布網址
+    // 1. 這裡填入你的 Google Sheets 發布網址
 const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTikTWQ1NHtmCIoslCCUnqJ_b-UOvFNnF2jkTFRYLthASVeGCZJOZDD5d9gZoy4X3zeQLhb-yHF2CRB/pub?output=csv';
 
 let rawData = [];
-const structure = {};
+let structure = {};
 
-// 初始化：讀取資料
 Papa.parse(publicSpreadsheetUrl, {
     download: true,
     header: true,
+    skipEmptyLines: true, // 跳過空白行
     complete: function(results) {
         rawData = results.data;
+        console.log("原始資料讀取成功，共", rawData.length, "筆");
         buildStructure(rawData);
         initDropdowns();
         document.getElementById('loader').style.display = 'none';
@@ -62,19 +63,20 @@ Papa.parse(publicSpreadsheetUrl, {
 });
 
 function buildStructure(data) {
-    console.log("原始資料範例:", data[0]); // 除錯用：看第一筆資料的欄位名稱
+    structure = {}; // 清空結構
     
-    data.forEach(row => {
+    data.forEach((row, index) => {
+        // 1. 抓取學院 (自動處理空格)
         const col = row['學院'] ? row['學院'].trim() : null;
         if (!col) return;
 
-        // 動態判斷系所欄位：優先找包含該學院名稱且包含「系所」字眼的欄位
-        // 這樣就不用管有沒有問號了
+        // 2. 自動尋找對應的系所欄位 (只要欄位名稱包含該學院名稱 + "系所" 關鍵字)
         let deptKey = Object.keys(row).find(key => key.includes(col) && key.includes('系所'));
         let dept = deptKey ? row[deptKey] : null;
 
-        const path = row['招生管道'] ? row['招生管道'].trim() : "未分類";
-        const yr = row['學年度'] ? row['學年度'].trim() : "未知";
+        // 3. 抓取管道與學年度
+        const path = row['招生管道'] ? row['招生管道'].trim() : "一般招生";
+        const yr = row['學年度'] ? row['學年度'].trim() : "年度不詳";
 
         if (dept && dept.trim() !== "") {
             dept = dept.trim();
@@ -85,7 +87,8 @@ function buildStructure(data) {
             structure[col][dept][path][yr] = row;
         }
     });
-    console.log("解析後的結構:", structure); // 如果這裡是空的，代表沒抓到系所
+    
+    console.log("結構化資料完成:", structure);
 }
 
 function initDropdowns() {
@@ -94,29 +97,47 @@ function initDropdowns() {
     const s3 = document.getElementById('sel-path');
     const s4 = document.getElementById('sel-year');
 
+    // 初始化學院
     s1.innerHTML = '<option value="">-- 選擇學院 --</option>';
-    Object.keys(structure).sort().forEach(c => s1.add(new Option(c, c)));
+    const colleges = Object.keys(structure).sort();
+    
+    if (colleges.length === 0) {
+        s1.innerHTML = '<option>資料解析失敗，請檢查 CSV 格式</option>';
+        return;
+    }
+
+    colleges.forEach(c => s1.add(new Option(c, c)));
     s1.disabled = false;
 
+    // 連動邏輯
     s1.onchange = () => {
-        resetDropdowns(['sel-dept', 'sel-path', 'sel-year']);
-        updateNext(s1, 'sel-dept', structure[s1.value]);
+        resetSelect(['sel-dept', 'sel-path', 'sel-year']);
+        if(s1.value) updateDropdown('sel-dept', structure[s1.value]);
     };
-    
+
     s2.onchange = () => {
-        resetDropdowns(['sel-path', 'sel-year']);
-        updateNext(s2, 'sel-path', structure[s1.value][s2.value]);
+        resetSelect(['sel-path', 'sel-year']);
+        if(s2.value) updateDropdown('sel-path', structure[s1.value][s2.value]);
     };
 
     s3.onchange = () => {
-        resetDropdowns(['sel-year']);
-        updateNext(s3, 'sel-year', structure[s1.value][s2.value][s3.value]);
+        resetSelect(['sel-year']);
+        if(s3.value) updateDropdown('sel-year', structure[s1.value][s2.value][s3.value]);
     };
 
     s4.onchange = showResult;
 }
 
-function resetDropdowns(ids) {
+function updateDropdown(id, dataSet) {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">-- 請選擇 --</option>';
+    if (dataSet) {
+        Object.keys(dataSet).sort().forEach(k => el.add(new Option(k, k)));
+        el.disabled = false;
+    }
+}
+
+function resetSelect(ids) {
     ids.forEach(id => {
         const el = document.getElementById(id);
         el.innerHTML = '<option value="">請先選擇上一項</option>';
@@ -125,28 +146,25 @@ function resetDropdowns(ids) {
     document.getElementById('result').style.display = 'none';
 }
 
-function updateNext(current, nextId, nextData) {
-    const next = document.getElementById(nextId);
-    if (!current.value || !nextData) return;
-
-    next.innerHTML = '<option value="">-- 請選擇 --</option>';
-    Object.keys(nextData).sort().forEach(k => next.add(new Option(k, k)));
-    next.disabled = false;
-}
-
 function showResult() {
     const c = document.getElementById('sel-college').value;
     const d = document.getElementById('sel-dept').value;
     const p = document.getElementById('sel-path').value;
     const y = document.getElementById('sel-year').value;
-    const info = structure[c][d][p][y];
-
-    document.getElementById('res-process').innerText = info['面試流程'] || '無資料';
-    document.getElementById('res-questions').innerText = info['面試題目'] || '無資料';
-    document.getElementById('res-advice').innerText = info['給學弟妹的建議'] || '無資料';
-    document.getElementById('res-portfolio').innerText = info['備審資料準備方向'] || '無資料';
-    document.getElementById('result').style.display = 'block';
+    
+    try {
+        const info = structure[c][d][p][y];
+        // 這裡的欄位名稱必須與 Google 表單完全一致，如果沒反應請檢查這幾行
+        document.getElementById('res-process').innerText = info['面試流程'] || '無資料';
+        document.getElementById('res-questions').innerText = info['面試題目'] || '無資料';
+        document.getElementById('res-advice').innerText = info['給學弟妹的建議'] || '無資料';
+        document.getElementById('res-portfolio').innerText = info['備審資料準備方向'] || '無資料';
+        document.getElementById('result').style.display = 'block';
+    } catch (e) {
+        console.error("顯示資料出錯:", e);
+    }
 }
 </script>
 </body>
 </html>
+
