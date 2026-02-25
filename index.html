@@ -143,7 +143,7 @@ function showResult() {
     document.getElementById('res-layout').innerText = info['考場長怎樣呢？'] || '無資料';
 
     // 合併流程與題目
-    const combinedText = `【面試流程與題目】\n${info['面試問題及流程'] || '無資料'}`;
+    const combinedText = `${info['面試問題及流程'] || '無資料'}`;
     document.getElementById('res-combined').innerText = combinedText;
 
     // 建議
@@ -155,3 +155,4 @@ function showResult() {
 </script>
 </body>
 </html>
+
