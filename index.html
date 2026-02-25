@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>中原大學面試經驗查詢系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        :root { --primary: #003a6c; --secondary: #f0f4f8; }
+        body { font-family: "PingFang TC", sans-serif; background: #eef2f3; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary); }
+        .filter-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        .result-card { display: none; margin-top: 25px; padding: 20px; border-radius: 10px; background: var(--secondary); border-left: 6px solid var(--primary); }
+        .item-title { font-weight: bold; color: var(--primary); margin-top: 15px; font-size: 1.1em; }
+        .item-content { white-space: pre-wrap; background: #fff; padding: 10px; border-radius: 5px; margin-top: 5px; border: 1px solid #eee; }
+        .loading { text-align: center; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎓 中原大學面試經驗查詢</h1>
+    <div id="loader" class="loading">正在從資料庫載入最新資料...</div>
+    
+    <div class="filter-section">
+        <select id="sel-college" disabled><option>載入中...</option></select>
+        <select id="sel-dept" disabled><option>請選擇學院</option></select>
+        <select id="sel-path" disabled><option>請選擇系所</option></select>
+        <select id="sel-year" disabled><option>請選擇管道</option></select>
+    </div>
+
+    <div id="result" class="result-card">
+        <div class="item-title">⏳ 面試流程</div>
+        <div id="res-process" class="item-content"></div>
+        <div class="item-title">❓ 面試題目</div>
+        <div id="res-questions" class="item-content"></div>
+        <div class="item-title">💡 給學弟妹的建議</div>
+        <div id="res-advice" class="item-content"></div>
+        <div class="item-title">📂 備審準備方向</div>
+        <div id="res-portfolio" class="item-content"></div>
+    </div>
+</div>
+
+<script>
+// 1. 這裡填入你的 Google Sheets 發布網址
+const publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTikTWQ1NHtmCIoslCCUnqJ_b-UOvFNnF2jkTFRYLthASVeGCZJOZDD5d9gZoy4X3zeQLhb-yHF2CRB/pub?output=csv';
+
+let rawData = [];
+const structure = {};
+
+// 初始化：讀取資料
+Papa.parse(publicSpreadsheetUrl, {
+    download: true,
+    header: true,
+    complete: function(results) {
+        rawData = results.data;
+        buildStructure(rawData);
+        initDropdowns();
+        document.getElementById('loader').style.display = 'none';
+    }
+});
+
+function buildStructure(data) {
+    data.forEach(row => {
+        const col = row['學院'] ? row['學院'].trim() : null;
+        if (!col) return;
+
+        // 根據學院判斷系所在哪一欄
+        let dept = "";
+        if (col === "理學院") dept = row['理學院系所有哪些？'];
+        else if (col === "工學院") dept = row['工學院系所有哪些？'];
+        else if (col === "電機資訊學院") dept = row['電機資訊學院系所有哪些？'];
+        else if (col === "商學院") dept = row['商學院系所有哪些？'];
+        else if (col === "法學院") dept = row['法學院系所有哪些？'];
+        else if (col === "設計學院") dept = row['設計學院系所有哪些？'];
+        else if (col === "人文與教育學院") dept = row['人文與教育學院系所有哪些？'];
+
+        const path = row['招生管道'] ? row['招生管道'].trim() : "未分類";
+        const yr = row['學年度'] ? row['學年度'].trim() : "未知";
+
+        if (dept) {
+            dept = dept.trim();
+            if (!structure[col]) structure[col] = {};
+            if (!structure[col][dept]) structure[col][dept] = {};
+            if (!structure[col][dept][path]) structure[col][dept][path] = {};
+            
+            // 存儲整列資料
+            structure[col][dept][path][yr] = row;
+        }
+    });
+}
+
+function initDropdowns() {
+    const s1 = document.getElementById('sel-college');
+    s1.innerHTML = '<option value="">-- 選擇學院 --</option>';
+    Object.keys(structure).sort().forEach(c => s1.add(new Option(c, c)));
+    s1.disabled = false;
+
+    s1.onchange = () => updateNext(s1, 'sel-dept', structure[s1.value]);
+    document.getElementById('sel-dept').onchange = () => updateNext(document.getElementById('sel-dept'), 'sel-path', structure[s1.value][document.getElementById('sel-dept').value]);
+    document.getElementById('sel-path').onchange = () => updateNext(document.getElementById('sel-path'), 'sel-year', structure[s1.value][document.getElementById('sel-dept').value][document.getElementById('sel-path').value]);
+    document.getElementById('sel-year').onchange = showResult;
+}
+
+function updateNext(current, nextId, nextData) {
+    const next = document.getElementById(nextId);
+    next.innerHTML = '<option value="">-- 選擇下一個 --</option>';
+    if(nextData) {
+        Object.keys(nextData).sort().forEach(k => next.add(new Option(k, k)));
+        next.disabled = false;
+    }
+    document.getElementById('result').style.display = 'none';
+}
+
+function showResult() {
+    const c = document.getElementById('sel-college').value;
+    const d = document.getElementById('sel-dept').value;
+    const p = document.getElementById('sel-path').value;
+    const y = document.getElementById('sel-year').value;
+    const info = structure[c][d][p][y];
+
+    document.getElementById('res-process').innerText = info['面試流程'] || '無資料';
+    document.getElementById('res-questions').innerText = info['面試題目'] || '無資料';
+    document.getElementById('res-advice').innerText = info['給學弟妹的建議'] || '無資料';
+    document.getElementById('res-portfolio').innerText = info['備審資料準備方向'] || '無資料';
+    document.getElementById('result').style.display = 'block';
+}
+</script>
+</body>
+</html>
