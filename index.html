@@ -26,13 +26,29 @@
         /* 非官方標籤樣式 */
         .unofficial-badge {
             font-size: 0.4em;
-            vertical-align: middle;
             color: #d9534f;
             border: 1px solid #d9534f;
             padding: 1px 4px;
             border-radius: 3px;
-            margin-left: 8px;
             font-weight: normal;
+            white-space: nowrap; /* 關鍵：強制標籤內容不換行 */
+            flex-shrink: 0; /* 防止標籤被擠壓變形 */
+        }
+        /* 讓標題與標籤保持在同一行 */
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap; /* 強制不換行 */
+            gap: 8px; /* 標題與標籤的間距 */
+            word-break: keep-all;
+        }
+
+        /* 針對小螢幕手機的微調 */
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 1.3rem; /* 手機版標題稍微縮小，避免擠壓 */
+            }
         }
 
         /* 精簡版表單連結區塊 */
@@ -93,7 +109,10 @@
 <body>
 
 <div class="container">
-    <h1>🎓 中原大學面試經驗查詢 <span class="unofficial-badge">非官方</span></h1>
+    <h1>
+        <span>🎓 中原大學面試經驗查詢</span>
+        <span class="unofficial-badge">非官方</span>
+    </h1>
     
     <div class="filter-grid">
         <div class="select-group"><label>1. 選擇學院</label><select id="sel-college" disabled><option>載入中...</option></select></div>
@@ -213,6 +232,7 @@ function showResult() {
 </script>
 </body>
 </html>
+
 
 
 
