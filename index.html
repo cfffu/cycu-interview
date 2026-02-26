@@ -23,6 +23,59 @@
         }
         select:focus { border-color: var(--primary); outline: none; }
 
+        /* 非官方標籤樣式 */
+        .unofficial-badge {
+            font-size: 0.4em;
+            vertical-align: middle;
+            color: #d9534f;
+            border: 1px solid #d9534f;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+
+        /* 精簡版表單連結區塊 */
+        .share-banner {
+            background-color: #fff9f0;
+            border: 1px dashed #ffb74d;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .share-banner p {
+            margin: 0;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        .share-btn {
+            background-color: #ffb74d;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: 0.3s;
+        }
+
+        .share-btn:hover {
+            background-color: #ffa726;
+        }
+
+        /* 防止選單撐開跑版 */
+        select {
+            width: 100%;
+            box-sizing: border-box;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         /* 結果區塊樣式 */
         .result-card { display: none; margin-top: 20px; padding: 20px; border-radius: 12px; background: #fff; border-top: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 10px; }
@@ -40,16 +93,7 @@
 <body>
 
 <div class="container">
-    <h1>🎓 中原大學面試經驗查詢 <span style="font-size: 0.5em; vertical-align: middle; color: #cc0000; border: 1px solid #cc0000; padding: 2px 5px; border-radius: 4px; margin-left: 10px;">非官方</span></h1>
-    
-    <div style="background-color: #fff4e5; border: 1px solid #ffcc80; padding: 15px; border-radius: 10px; margin-bottom: 25px; text-align: center;">
-        <p style="margin: 0; color: #663c00; font-weight: bold;">📢 還沒分享過你的面試經驗嗎？</p>
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc2X4-W8Th6FwGBGORvgb7VbovD5sQn1JgkhaJvJfGl0dlG4A/viewform?usp=header" target="_blank" style="display: inline-block; margin-top: 10px; background-color: #ff9800; color: white; padding: 8px 20px; border-radius: 5px; text-decoration: none; font-size: 0.9em; transition: 0.3s;">
-            點我填寫經驗分享表單
-        </a>
-    </div>
-
-    <div id="loader" class="loading">正在從資料庫載入最新資料...</div>
+    <h1>🎓 中原大學面試經驗查詢 <span class="unofficial-badge">非官方</span></h1>
     
     <div class="filter-grid">
         <div class="select-group"><label>1. 選擇學院</label><select id="sel-college" disabled><option>載入中...</option></select></div>
@@ -74,6 +118,11 @@
             <div class="item-title">給學弟妹的建議</div>
             <div id="res-advice" class="item-content"></div>
         </div>
+    </div>
+
+    <div class="share-banner">
+        <p>📢 歡迎分享你的面試經驗，幫助更多學弟妹！</p>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc2X4-W8Th6FwGBGORvgb7VbovD5sQn1JgkhaJvJfGl0dlG4A/viewform?usp=header" target="_blank" class="share-btn">我要分享</a>
     </div>
 </div>
 
@@ -164,6 +213,7 @@ function showResult() {
 </script>
 </body>
 </html>
+
 
 
 
