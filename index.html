@@ -40,7 +40,16 @@
 <body>
 
 <div class="container">
-    <h1>🎓 中原大學面試經驗查詢</h1>
+    <h1>🎓 中原大學面試經驗查詢 <span style="font-size: 0.5em; vertical-align: middle; color: #cc0000; border: 1px solid #cc0000; padding: 2px 5px; border-radius: 4px; margin-left: 10px;">非官方</span></h1>
+    
+    <div style="background-color: #fff4e5; border: 1px solid #ffcc80; padding: 15px; border-radius: 10px; margin-bottom: 25px; text-align: center;">
+        <p style="margin: 0; color: #663c00; font-weight: bold;">📢 還沒分享過你的面試經驗嗎？</p>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc2X4-W8Th6FwGBGORvgb7VbovD5sQn1JgkhaJvJfGl0dlG4A/viewform?usp=header" target="_blank" style="display: inline-block; margin-top: 10px; background-color: #ff9800; color: white; padding: 8px 20px; border-radius: 5px; text-decoration: none; font-size: 0.9em; transition: 0.3s;">
+            點我填寫經驗分享表單
+        </a>
+    </div>
+
+    <div id="loader" class="loading">正在從資料庫載入最新資料...</div>
     
     <div class="filter-grid">
         <div class="select-group"><label>1. 選擇學院</label><select id="sel-college" disabled><option>載入中...</option></select></div>
@@ -155,5 +164,6 @@ function showResult() {
 </script>
 </body>
 </html>
+
 
 
